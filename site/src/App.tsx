@@ -92,6 +92,14 @@ function computeRanks(e: number, s: number, w: number, n: number): [1 | 2 | 3 | 
   return [ranks[0] as 1 | 2 | 3 | 4, ranks[1] as 1 | 2 | 3 | 4, ranks[2] as 1 | 2 | 3 | 4, ranks[3] as 1 | 2 | 3 | 4]
 }
 
+function getPenaltyAmount(penalty: number): number {
+  return Math.abs(penalty)
+}
+
+function getScoreAfterPenalty(score: number, penalty: number): number {
+  return score + penalty
+}
+
 export default function App({ data }: { data: DataFile }) {
   const [selectedYears, setSelectedYears] = useState<number[]>([...data.years].sort((a, b) => b - a))
   const [selectedPhases, setSelectedPhases] = useState<Array<'Regular' | 'Semi-Final' | 'Final'>>([
@@ -153,19 +161,24 @@ export default function App({ data }: { data: DataFile }) {
     }
 
     for (const match of filteredMatches) {
+      const eNetScore = getScoreAfterPenalty(match.e_score, match.e_penalty)
+      const sNetScore = getScoreAfterPenalty(match.s_score, match.s_penalty)
+      const wNetScore = getScoreAfterPenalty(match.w_score, match.w_penalty)
+      const nNetScore = getScoreAfterPenalty(match.n_score, match.n_penalty)
+
       const [eRank, sRank, wRank, nRank] =
         typeof match.e_rank === 'number' &&
         typeof match.s_rank === 'number' &&
         typeof match.w_rank === 'number' &&
         typeof match.n_rank === 'number'
           ? [match.e_rank, match.s_rank, match.w_rank, match.n_rank]
-          : computeRanks(match.e_score, match.s_score, match.w_score, match.n_score)
+          : computeRanks(eNetScore, sNetScore, wNetScore, nNetScore)
 
       const seats = [
-        { player_id: match.e_player_id, score: match.e_score, penalty: match.e_penalty, rank: eRank },
-        { player_id: match.s_player_id, score: match.s_score, penalty: match.s_penalty, rank: sRank },
-        { player_id: match.w_player_id, score: match.w_score, penalty: match.w_penalty, rank: wRank },
-        { player_id: match.n_player_id, score: match.n_score, penalty: match.n_penalty, rank: nRank },
+        { player_id: match.e_player_id, score: eNetScore, penalty: getPenaltyAmount(match.e_penalty), rank: eRank },
+        { player_id: match.s_player_id, score: sNetScore, penalty: getPenaltyAmount(match.s_penalty), rank: sRank },
+        { player_id: match.w_player_id, score: wNetScore, penalty: getPenaltyAmount(match.w_penalty), rank: wRank },
+        { player_id: match.n_player_id, score: nNetScore, penalty: getPenaltyAmount(match.n_penalty), rank: nRank },
       ]
 
       const rankCounts = new Map<number, number>()
