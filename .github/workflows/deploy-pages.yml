@@ -5,7 +5,7 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: "12 * * * *"   # 每小時第 12 分（UTC）
+    - cron: "21 * * * *"   # 改為每小時第 43 分（UTC），避開熱門時段減少嚴重延遲
 
 permissions:
   contents: write
@@ -47,13 +47,17 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add site/public/data.json
             git commit -m "chore: update data.json"
-            git push
+            
+            # 💡 關鍵修正：在 push 前先拉取遠端最新代碼並 rebase，防止 race condition
+            git pull --rebase origin main
+            
+            git push origin main
           fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22" # 💡 順便升級到 Node 22，消滅舊版 Node 的 Deprecation 警告
           cache: "npm"
           cache-dependency-path: site/package-lock.json
 
