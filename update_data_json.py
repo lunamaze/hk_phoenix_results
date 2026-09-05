@@ -1,4 +1,5 @@
 import json
+import math
 import re
 import ssl
 import urllib.request
@@ -40,13 +41,18 @@ def _to_float(v: Any) -> float:
     if v is None:
         return 0.0
     if isinstance(v, float):
+        if math.isnan(v) or math.isinf(v):
+            return 0.0
         return v
     if isinstance(v, int):
         return float(v)
     try:
-        return float(v)
+        f = float(v)
     except Exception:
         return 0.0
+    if math.isnan(f) or math.isinf(f):
+        return 0.0
+    return f
 
 
 def normalize_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -91,7 +97,10 @@ def normalize_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def is_empty_match_row(row: Dict[str, Any]) -> bool:
     def z(x: Any) -> bool:
         try:
-            return abs(float(x)) < 1e-9
+            f = float(x)
+            if math.isnan(f) or math.isinf(f):
+                return True
+            return abs(f) < 1e-9
         except Exception:
             return True
 
@@ -390,7 +399,7 @@ def merge_payload(
 def write_data_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
         encoding="utf-8",
     )
     print("data_json_written", str(path))
